@@ -1,0 +1,10 @@
+# IDE
+.idea/
+
+# Virtual Environment
+.venv/
+
+# Environment Variables
+.env
+
+.env
