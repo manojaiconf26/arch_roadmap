@@ -1,0 +1,3 @@
+groq
+boto3
+python-dotenv

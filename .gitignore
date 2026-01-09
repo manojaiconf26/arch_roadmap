@@ -3,8 +3,12 @@
 
 # Virtual Environment
 .venv/
+venv/
 
 # Environment Variables
 .env
 
-.env
+**/__pycache__/
+
+*.png
+*.pdf
