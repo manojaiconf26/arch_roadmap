@@ -1,0 +1,13 @@
+{
+  "workflow_build_web_app": {
+    "plan": {
+      "task": "build_web_app",
+      "steps": [
+        "re-analyze",
+        "refine design",
+        "re-implement carefully"
+      ]
+    },
+    "score": 6
+  }
+}
