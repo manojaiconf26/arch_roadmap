@@ -1,4 +1,3 @@
-# Entry point (control loop)
 from agent.agent import Agent
 
 

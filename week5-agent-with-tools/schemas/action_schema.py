@@ -1,5 +1,5 @@
 # Allowed agent outputs
-from typing import TypedDict, Dict, Literal, Any
+from typing import TypedDict, Dict, Any, Literal
 
 
 class Action(TypedDict):
