@@ -26,13 +26,43 @@ A simplified multi-agent system built with AWS Strands Agents SDK, demonstrating
 **Flow**: Research → Data Processing → File Output
 
 ```
-Research Agent → Data Processor Agent → Direct File Operations
+┌─────────────────────────────────────────────────────────────────┐
+│              Sequential Content Creation Workflow               │
+└─────────────────────────────────────────────────────────────────┘
+
+    Input: Topic
+       │
+       ▼
+┌──────────────────┐
+│  Research Agent  │  ← Uses llama-3.3-70b-versatile
+│                  │  ← Tools: web_search, get_content
+└────────┬─────────┘
+         │
+         │ Findings
+         ▼
+┌──────────────────┐
+│ Data Processor   │  ← Uses llama-3.1-8b-instant
+│     Agent        │  ← Structures data to JSON/CSV
+└────────┬─────────┘
+         │
+         │ Structured Data
+         ▼
+┌──────────────────┐
+│ Direct File I/O  │  ← Python os.makedirs()
+│   (Workflow)     │  ← Python open() / write()
+└────────┬─────────┘
+         │
+         ▼
+    Output Files:
+    - raw_research.txt
+    - processed_data.json
+    - content_document.md
 ```
 
 **Steps**:
 1. Research Agent gathers information on a topic
 2. Data Processor Agent structures the findings
-3. Direct file operations save organized documentation
+3. Workflow code directly saves files (no agent)
 
 **Use Case**: Comprehensive content generation, report creation, knowledge base building
 
@@ -40,15 +70,58 @@ Research Agent → Data Processor Agent → Direct File Operations
 **Flow**: Multiple agents working simultaneously
 
 ```
-Research Agent (Task 1) ┐
-Research Agent (Task 2) ├─→ Concurrent Execution
-Data Processor (Task 3) ┘
+┌─────────────────────────────────────────────────────────────────┐
+│               Parallel Batch Processing Workflow                │
+└─────────────────────────────────────────────────────────────────┘
+
+    Input: Batch Tasks [research, research, data_processing, 
+                        file_processing, data_processing]
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│              ThreadPoolExecutor (max_workers=3)              │
+└──────────────────────────────────────────────────────────────┘
+       │
+       ├─────────────┬─────────────┬─────────────┐
+       ▼             ▼             ▼             │
+┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│ Research │  │ Research │  │   Data   │       │
+│  Agent   │  │  Agent   │  │Processor │       │
+│ (Task 0) │  │ (Task 1) │  │ (Task 2) │       │
+└────┬─────┘  └────┬─────┘  └────┬─────┘       │
+     │             │             │             │
+     │ Complete    │ Complete    │ Complete    ▼
+     │             │             │       ┌──────────┐
+     └─────────────┴─────────────┴──────▶│ Direct   │
+                                         │  File    │
+                   ┌─────────────────────│   I/O    │
+                   │                     │ (Task 3) │
+                   │                     └────┬─────┘
+                   │                          │
+                   │                          │ Complete
+                   ▼                          │
+            ┌──────────┐                      │
+            │   Data   │◀─────────────────────┘
+            │Processor │
+            │ (Task 4) │
+            └────┬─────┘
+                 │
+                 │ Complete
+                 ▼
+         ┌───────────────┐
+         │ Collect & Sum │
+         │    Results    │
+         └───────┬───────┘
+                 │
+                 ▼
+         Output: batch_summary.json
+                 + individual task results
 ```
 
 **Steps**:
-1. Multiple agents process different tasks concurrently
-2. ThreadPoolExecutor manages parallel execution
-3. Results are collected and summarized
+1. Tasks routed to Research Agent, Data Processor Agent, or direct file I/O
+2. ThreadPoolExecutor manages parallel execution (max 3 concurrent)
+3. Results collected and summarized as tasks complete
 
 **Use Case**: High-throughput data processing, bulk operations, distributed analysis
 
