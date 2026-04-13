@@ -1,0 +1,7 @@
+strands-agents
+strands-agents[litellm]
+strands-agents-tools
+pydantic
+python-dotenv
+pytest
+hypothesis

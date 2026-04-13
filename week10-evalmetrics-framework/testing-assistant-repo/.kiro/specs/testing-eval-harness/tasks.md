@@ -1,0 +1,169 @@
+# Implementation Plan
+
+- [ ] 1. Set up project structure and dependencies
+  - Create directory structure: `testing_eval_harness/`, subfolders for each eval type, `tests/`
+  - Create `__init__.py` files for all packages
+  - Create `requirements.txt` with `strands-agents`, `strands-agents-evals`, `strands-agents-tools`, `pydantic`, `pytest`, `hypothesis`, `boto3`, `promptfoo`
+  - Create `config.py` with shared configuration (Phase 1 agent import paths, model IDs, AWS region)
+  - _Requirements: 1.5, 2.4, 5.1_
+
+- [ ] 2. Implement operational metrics module
+  - Ref: [01-operational-metrics](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/blob/main/01-operational-metrics/README.md)
+  - [ ] 2.1 Create `operational/cost_tracker.py`
+    - Implement `calculate_cost(input_tokens, output_tokens, model_id)` using per-model pricing table
+    - Extract token counts from `AgentResult.metrics.accumulated_usage`
+    - Support pricing for both Groq/LiteLLM and Bedrock models
+    - _Requirements: 2.1_
+  - [ ] 2.2 Create `operational/latency_tracker.py`
+    - Implement TTFT measurement using streaming callback timestamps
+    - Implement TTLT measurement from total response duration
+    - Implement `calculate_throughput(output_tokens, duration_seconds)`
+    - Extract latency from `AgentResult.metrics.accumulated_metrics["latencyMs"]`
+    - _Requirements: 2.2, 2.3_
+  - [ ] 2.3 Create `operational/error_tracker.py`
+    - Implement `calculate_error_rate(error_count, total_invocations)`
+    - Track throttling events from Bedrock API responses
+    - _Requirements: 2.5_
+  - [ ] 2.4 Create `operational/cloudwatch_publisher.py`
+    - Publish custom metrics to CloudWatch with dimensions: agent_name, model_provider
+    - Metrics: CostPerRequest, LatencyMs, TTFT, TTLT, TokensPerSecond, ErrorRate
+    - _Requirements: 2.4_
+  - [ ]* 2.5 Write property tests for operational metrics
+    - **Property 2: Cost calculation correctness**
+    - **Property 3: Throughput calculation correctness**
+    - **Property 4: Error rate calculation correctness**
+    - **Validates: Requirements 2.1, 2.3, 2.5**
+  - [ ]* 2.6 Write unit tests for operational metrics
+    - Test cost calculation with known token counts and pricing
+    - Test throughput with known duration
+    - Test CloudWatch publish call structure
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+
+- [ ] 3. Checkpoint - Make sure all tests are passing
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 4. Implement quality metrics module
+  - Ref: [02-quality-metrics](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/tree/main/02-quality-metrics)
+  - [ ] 4.1 Create `quality/quality_scorer.py`
+    - Implement programmatic ground truth validation (compare agent output against known expected values)
+    - Implement LLM-as-judge scoring for faithfulness (factual accuracy relative to input context)
+    - Implement LLM-as-judge scoring for relevance (how well output addresses the input query)
+    - Implement LLM-as-judge scoring for coherence (logical consistency and readability)
+    - Store results with timestamps and run IDs for trend analysis
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - [ ]* 4.2 Write property test for quality scores
+    - **Property 5: Quality scores are in valid range**
+    - **Validates: Requirements 3.1, 3.2, 3.3**
+  - [ ]* 4.3 Write unit tests for quality metrics
+    - Test faithfulness scoring returns score in [0, 1]
+    - Test relevance scoring returns score in [0, 1]
+    - Test coherence scoring returns score in [0, 1]
+    - Test result storage format includes timestamp and run_id
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+
+- [ ] 5. Checkpoint - Make sure all tests are passing
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 6. Implement promptfoo evaluation module
+  - Ref: [05-01-Prompt-Foo](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/blob/main/05-framework-specific-evaluations/05-01-Prompt-Foo/README.md)
+  - [ ] 6.1 Create `promptfoo/functional_config.py`
+    - Generate promptfoo YAML config for functional tests per agent (RUA, TGEA, TVA, EA)
+    - Define assertion-based test cases: is-json, structure validation, keyword presence
+    - Create Python provider script that wraps Phase 1 agent calls for promptfoo
+    - _Requirements: 4.1_
+  - [ ] 6.2 Create `promptfoo/redteam_config.py`
+    - Generate promptfoo YAML config for red-team tests
+    - Configure plugins: prompt-injection, jailbreak, policy-violation, harmful-content
+    - Configure strategies: basic, crescendo
+    - _Requirements: 4.2_
+  - [ ] 6.3 Create `promptfoo/runner.py`
+    - Implement `run_promptfoo(config_path)` to execute promptfoo CLI and capture results
+    - Parse promptfoo JSON output into `List[PromptfooResult]`
+    - For red-team results, extract attack_type, severity from promptfoo output
+    - Generate pass/fail summary
+    - _Requirements: 4.3, 4.4_
+  - [ ]* 6.4 Write property test for red-team report completeness
+    - **Property 6: Red-team vulnerability report completeness**
+    - **Validates: Requirements 4.3**
+  - [ ]* 6.5 Write unit tests for promptfoo module
+    - Test functional config generation produces valid YAML
+    - Test red-team config includes all required plugins
+    - Test result parsing extracts correct fields
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+
+- [ ] 7. Checkpoint - Make sure all tests are passing
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 8. Implement Strands Evals SDK module
+  - Ref: [Strands Evaluators](https://strandsagents.com/docs/user-guide/evals-sdk/evaluators/), [05-03-Strands](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/tree/main/05-framework-specific-evaluations/05-03-Strands)
+  - [ ] 8.1 Create `strands_evals/rubrics.py`
+    - Define custom rubrics for OutputEvaluator per agent (RUA parsing quality, TGEA test case quality, TVA validation accuracy)
+    - Define pipeline-level rubric for TrajectoryEvaluator
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [ ] 8.2 Create `strands_evals/evaluator_config.py`
+    - Configure per-agent evaluator sets (RUA: Helpfulness+Faithfulness, TGEA: Helpfulness+ToolSelection+OutputEvaluator, TVA: Faithfulness+OutputEvaluator)
+    - Configure session-level evaluators (GoalSuccessRateEvaluator, TrajectoryEvaluator)
+    - Set up telemetry with `StrandsEvalsTelemetry` and `StrandsInMemorySessionMapper` for trace-based evaluation
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - [ ] 8.3 Create `strands_evals/experiment_runner.py`
+    - Implement `run_agent_evals(agent, cases, evaluators)` using Strands `Experiment` class
+    - Create test `Case` objects with input, expected_output, and expected_trajectory
+    - Collect evaluation results into `List[EvalResult]`
+    - Support both sync and async evaluation via `run_evaluations` / `run_evaluations_async`
+    - _Requirements: 1.4, 1.5_
+  - [ ]* 8.4 Write property test for evaluator score ranges
+    - **Property 1: Evaluator scores are in valid range**
+    - **Validates: Requirements 1.1, 1.2, 1.3, 1.5**
+  - [ ]* 8.5 Write unit tests for Strands Evals module
+    - Test evaluator config returns correct evaluators per agent
+    - Test experiment runner produces structured report with scores and reasoning
+    - Test rubrics are non-empty strings
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+
+- [ ] 9. Checkpoint - Make sure all tests are passing
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 10. Implement AgentCore deployment and runtime evals module
+  - Ref: [05-04-AgentCore-Runtime-Evals](https://github.com/aws-samples/sample-gen-ai-evaluations-workshop/blob/main/05-framework-specific-evaluations/05-04-AgentCore-Runtime-Evals/README.md)
+  - [ ] 10.1 Create `deployment/agentcore_deployer.py`
+    - Implement `deploy_to_agentcore(agent_module)` using `bedrock-agentcore-starter-toolkit`
+    - Create `BedrockAgentCoreApp` wrapper for each Phase 1 agent
+    - Configure ECR, IAM roles, and deployment settings
+    - Implement `verify_deployment()` to check agent reaches READY status
+    - Implement `destroy_deployment()` for cleanup
+    - _Requirements: 5.1_
+  - [ ] 10.2 Create `deployment/agentcore_evals.py`
+    - Implement AgentCore `evaluate()` API calls with built-in evaluators: `Builtin.Helpfulness`, `Builtin.ToolSelectionAccuracy`
+    - Retrieve session spans from CloudWatch logs
+    - Parse spans into the format required by the evaluate API
+    - Extract scores, labels, and explanations from evaluation results
+    - _Requirements: 5.2, 5.4_
+  - [ ] 10.3 Create `deployment/e2e_validator.py`
+    - Run Strands Evals SDK evaluators against deployed AgentCore endpoints
+    - Run promptfoo functional and red-team tests against deployed endpoints
+    - Run AgentCore native runtime evals
+    - Compare deployed agent scores against local evaluation baselines
+    - Produce unified deployment readiness report
+    - _Requirements: 5.2, 5.3, 5.4, 5.5_
+  - [ ]* 10.4 Write unit tests for AgentCore deployment module
+    - Test deployment config generation
+    - Test evaluation result parsing
+    - Test E2E report structure contains all three eval sources
+    - _Requirements: 5.1, 5.4, 5.5_
+
+- [ ] 11. Implement unified report generator
+  - [ ] 11.1 Create `reports/report_generator.py`
+    - Aggregate results from all five evaluation modules into a single `EvaluationReport`
+    - Compute `overall_readiness` based on threshold scores across all eval types
+    - Output report as JSON and optional HTML summary
+    - _Requirements: 1.5, 5.5_
+
+- [ ] 12. Create CLI entry point
+  - [ ] 12.1 Create `run_eval.py` with CLI interface
+    - Accept flags to run specific eval types: `--operational`, `--quality`, `--promptfoo`, `--strands-evals`, `--agentcore`, `--all`
+    - Accept Phase 1 agent path or deployed endpoint URL
+    - Output unified evaluation report
+    - _Requirements: 1.5, 5.5_
+
+- [ ] 13. Final Checkpoint - Make sure all tests are passing
+  - Ensure all tests pass, ask the user if questions arise.
