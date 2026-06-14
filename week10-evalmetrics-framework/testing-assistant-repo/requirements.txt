@@ -1,5 +1,6 @@
-strands-agents
-strands-agents[litellm]
+strands-agents>=1.36.0
+strands-agents[litellm]>=1.36.0
+strands-agents[ollama]>=1.36.0
 strands-agents-tools
 pydantic
 python-dotenv

@@ -33,6 +33,7 @@ Run the pipeline with a requirements file:
 
 ```bash
 python -m ai_testing_assistant path/to/requirements.txt
+python -m ai_testing_assistant requirements/swag_labs_requirements.txt
 ```
 
 Or pass raw requirement text directly:
