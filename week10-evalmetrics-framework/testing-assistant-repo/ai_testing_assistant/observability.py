@@ -11,24 +11,24 @@ from ai_testing_assistant.models import AgentMetrics
 
 
 def configure_logging(level: int = logging.INFO) -> None:
-    """Configure Python logging for the strands logger hierarchy.
+    """Configure Python logging for the application and strands loggers.
 
-    Sets up the ``strands`` logger with a stream handler and a concise
-    format so that agent execution details are visible during pipeline
-    runs.
+    Sets up both the application logger (``ai_testing_assistant``) and the
+    ``strands`` logger with stream handlers so that pipeline progress and
+    agent execution details are visible during runs.
 
     Args:
         level: The logging level to apply (default ``logging.INFO``).
     """
-    logger = logging.getLogger("strands")
-    logger.setLevel(level)
+    fmt = logging.Formatter("%(levelname)s | %(name)s | %(message)s")
 
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setFormatter(
-            logging.Formatter("%(levelname)s | %(name)s | %(message)s")
-        )
-        logger.addHandler(handler)
+    for logger_name in ("ai_testing_assistant", "strands"):
+        lgr = logging.getLogger(logger_name)
+        lgr.setLevel(level)
+        if not lgr.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(fmt)
+            lgr.addHandler(handler)
 
 
 def extract_agent_metrics(agent_name: str, result) -> AgentMetrics:
@@ -58,20 +58,30 @@ def extract_agent_metrics(agent_name: str, result) -> AgentMetrics:
 
     accumulated_usage = getattr(metrics, "accumulated_usage", {}) or {}
     accumulated_metrics = getattr(metrics, "accumulated_metrics", {}) or {}
-    agent_invocations = getattr(metrics, "agent_invocations", []) or []
 
-    cycle_count = 0
-    if agent_invocations:
-        last_invocation = agent_invocations[-1]
-        cycles = getattr(last_invocation, "cycles", []) or []
-        cycle_count = len(cycles)
+    # Handle both dict-like and object-like access for usage/metrics
+    if isinstance(accumulated_usage, dict):
+        input_tokens = accumulated_usage.get("inputTokens", 0)
+        output_tokens = accumulated_usage.get("outputTokens", 0)
+        total_tokens = accumulated_usage.get("totalTokens", 0)
+    else:
+        input_tokens = getattr(accumulated_usage, "inputTokens", 0) or 0
+        output_tokens = getattr(accumulated_usage, "outputTokens", 0) or 0
+        total_tokens = getattr(accumulated_usage, "totalTokens", 0) or 0
+
+    if isinstance(accumulated_metrics, dict):
+        latency_ms = accumulated_metrics.get("latencyMs", 0.0)
+    else:
+        latency_ms = getattr(accumulated_metrics, "latencyMs", 0.0) or 0.0
+
+    cycle_count = getattr(metrics, "cycle_count", 0) or 0
 
     return AgentMetrics(
         agent_name=agent_name,
-        input_tokens=accumulated_usage.get("inputTokens", 0),
-        output_tokens=accumulated_usage.get("outputTokens", 0),
-        total_tokens=accumulated_usage.get("totalTokens", 0),
-        latency_ms=accumulated_metrics.get("latencyMs", 0.0),
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+        latency_ms=latency_ms,
         cycle_count=cycle_count,
     )
 
