@@ -1,0 +1,9 @@
+strands-agents[ollama]
+strands-agents-tools
+strands-agents-evals
+nest-asyncio
+pydantic>=2.0,<=2.12.3
+dill>=0.3.0
+qdrant-client>=1.9.0
+fastembed>=0.3.0
+opentelemetry-sdk~=1.38.0
