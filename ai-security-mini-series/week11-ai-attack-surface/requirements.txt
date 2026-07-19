@@ -1,0 +1,20 @@
+# Enterprise AI Research Assistant - Requirements
+# ================================================
+# Install with: pip install -r requirements.txt
+
+# Core: Strands Agents SDK with Ollama support
+strands-agents[ollama]>=0.1.0
+
+# Optional: LiteLLM for Groq/OpenAI/Anthropic providers
+strands-agents[litellm]>=0.1.0
+
+# Community tools package
+strands-agents-tools>=0.1.0
+
+# RAG: Local embeddings for in-memory vector search
+sentence-transformers>=2.2.0
+numpy>=1.24.0
+
+# Jupyter (if running as notebook)
+jupyter>=1.0.0
+ipykernel>=6.0.0
